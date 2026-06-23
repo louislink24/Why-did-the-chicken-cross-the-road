@@ -172,7 +172,46 @@ function loop(){
     requestAnimationFrame(loop);
 }
 
-loop();
+function move(direction){
+
+    const step = 30;
+
+    if(direction === "up"){
+        chicken.y -= step;
+    }
+
+    if(direction === "down"){
+        chicken.y += step;
+    }
+
+    if(direction === "left"){
+        chicken.x -= step;
+    }
+
+    if(direction === "right"){
+        chicken.x += step;
+    }
+
+    chicken.x = Math.max(0,Math.min(canvas.width-chicken.size,chicken.x));
+    chicken.y = Math.max(0,Math.min(canvas.height-chicken.size,chicken.y));
+
+    if(chicken.y <= 0){
+        score++;
+        scoreText.textContent = "Score : " + score;
+
+        chicken.x = 240;
+        chicken.y = 550;
+
+        cars.forEach(car=>{
+            if(car.speed > 0){
+                car.speed += 0.3;
+            }else{
+                car.speed -= 0.3;
+            }
+        });
+    }
+        }
+    loop();
 </script>
 
     <div id="mobileControls">
