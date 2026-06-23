@@ -3,58 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐔 Chicken Crossroad</title>
+<title>🐔 Chicken Crossroad 2.0</title>
 
 <style>
 body{
     margin:0;
-    background:#222;
+    font-family:Arial;
+    background:#111;
     color:white;
-    font-family:Arial,sans-serif;
     text-align:center;
     user-select:none;
 }
 
-h1{
-    margin:10px;
-}
-
-#score{
-    font-size:24px;
-    margin-bottom:10px;
+button{
+    padding:12px 18px;
+    margin:8px;
+    font-size:18px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
 }
 
 canvas{
-    background:#444;
+    background:#333;
+    display:block;
+    margin:auto;
     border:3px solid white;
-    max-width:95%;
 }
 
-#mobileControls{
-    margin-top:15px;
+#ui{
+    margin-top:10px;
+}
+
+#back{
+    position:absolute;
+    top:10px;
+    left:10px;
+    font-size:22px;
+    display:none;
+    cursor:pointer;
 }
 
 #mobileControls button{
     width:70px;
     height:70px;
     font-size:30px;
-    margin:4px;
-    border:none;
     border-radius:15px;
-    cursor:pointer;
 }
 </style>
 </head>
 <body>
 
-<h1>🐔 Chicken Crossroad</h1>
-<div id="score">Score : 0</div>
+<div id="back" onclick="goMenu()">⬅️</div>
 
-<canvas id="game" width="500" height="600"></canvas>
+<h1>🐔 Chicken Crossroad 2.0</h1>
 
-<div id="mobileControls">
-    <button onclick="move('up')">⬆️</button>
-    <br>
+<div id="menu">
+    <button onclick="startGame()">▶ Play</button>
+    <button onclick="openSkins()">🎭 Skins</button>
+    <p>🏆 Best score: <span id="best">0</span></p>
+</div>
+
+<div id="skins" style="display:none;">
+    <p>Choisis ton skin :</p>
+    <div id="skinList"></div>
+</div>
+
+<canvas id="game" width="500" height="600" style="display:none;"></canvas>
+
+<div id="mobileControls" style="display:none;">
+    <button onclick="move('up')">⬆️</button><br>
     <button onclick="move('left')">⬅️</button>
     <button onclick="move('down')">⬇️</button>
     <button onclick="move('right')">➡️</button>
@@ -64,191 +82,202 @@ canvas{
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const scoreText = document.getElementById("score");
+
+let state = "menu";
+
+let skin = "🐔";
+let unlockedUFO = false;
 
 let score = 0;
+let best = localStorage.getItem("best") || 0;
+document.getElementById("best").textContent = best;
 
-const chicken = {
-    x:240,
-    y:550,
-    size:20
-};
+const skins = ["🐵","🐭","🐰","🐼","🐱","🐶","🐨","🐻","🐧","🐦","🦆"];
+const secret = "☭";
+
+const chicken = {x:240,y:550,size:20};
 
 const cars = [];
+const coins = [];
+const logs = [];
 
-function createCar(y,speed,color){
-    cars.push({
-        x: speed > 0 ? -100 : canvas.width + 100,
-        y:y,
-        width:80,
-        height:35,
-        speed:speed,
-        color:color
+function setup(){
+    cars.length=0;
+    coins.length=0;
+    logs.length=0;
+
+    for(let i=0;i<6;i++){
+        cars.push({
+            x:Math.random()*500,
+            y:80+i*80,
+            w:80,
+            h:35,
+            speed:(Math.random()>0.5?1:-1)*(2+Math.random()*2)
+        });
+    }
+
+    for(let i=0;i<3;i++){
+        logs.push({
+            x:Math.random()*500,
+            y:150+i*120,
+            w:120,
+            h:30,
+            speed:2
+        });
+    }
+
+    for(let i=0;i<5;i++){
+        coins.push({
+            x:Math.random()*500,
+            y:Math.random()*600,
+            r:10
+        });
+    }
+}
+
+function startGame(){
+    state="game";
+    document.getElementById("menu").style.display="none";
+    document.getElementById("skins").style.display="none";
+    canvas.style.display="block";
+    document.getElementById("mobileControls").style.display="block";
+    document.getElementById("back").style.display="block";
+    setup();
+}
+
+function openSkins(){
+    state="skins";
+    document.getElementById("menu").style.display="none";
+    document.getElementById("skins").style.display="block";
+    document.getElementById("skinList").innerHTML="";
+
+    skins.forEach(s=>{
+        let b=document.createElement("button");
+        b.textContent=s;
+        b.onclick=()=>skin=s;
+        document.getElementById("skinList").appendChild(b);
     });
+
+    let b=document.createElement("button");
+    b.textContent=unlockedUFO?secret:"🔒 ?";
+    b.onclick=()=>{
+        if(unlockedUFO) skin=secret;
+    };
+    document.getElementById("skinList").appendChild(b);
 }
 
-for(let i=0;i<8;i++){
-    createCar(
-        80 + i*60,
-        Math.random() > 0.5
-        ? 3 + Math.random()*3
-        : -(3 + Math.random()*3),
-        `hsl(${Math.random()*360},80%,60%)`
-    );
+function goMenu(){
+    state="menu";
+    canvas.style.display="none";
+    document.getElementById("mobileControls").style.display="none";
+    document.getElementById("back").style.display="none";
+    document.getElementById("menu").style.display="block";
 }
 
-function winPoint(){
+function move(dir){
+    let step=30;
+    if(dir==="up") chicken.y-=step;
+    if(dir==="down") chicken.y+=step;
+    if(dir==="left") chicken.x-=step;
+    if(dir==="right") chicken.x+=step;
 
-    score++;
+    chicken.x=Math.max(0,Math.min(500,chicken.x));
+    chicken.y=Math.max(0,Math.min(600,chicken.y));
 
-    scoreText.textContent = "Score : " + score;
+    if(chicken.y<=0){
+        score++;
+        chicken.y=550;
 
-    chicken.x = 240;
-    chicken.y = 550;
-
-    cars.forEach(car=>{
-        if(car.speed > 0){
-            car.speed += 0.3;
-        }else{
-            car.speed -= 0.3;
+        if(score>best){
+            best=score;
+            localStorage.setItem("best",best);
+            document.getElementById("best").textContent=best;
         }
-    });
-}
 
-function move(direction){
-
-    const step = 30;
-
-    if(direction === "up"){
-        chicken.y -= step;
-    }
-
-    if(direction === "down"){
-        chicken.y += step;
-    }
-
-    if(direction === "left"){
-        chicken.x -= step;
-    }
-
-    if(direction === "right"){
-        chicken.x += step;
-    }
-
-    chicken.x = Math.max(
-        0,
-        Math.min(canvas.width - chicken.size, chicken.x)
-    );
-
-    chicken.y = Math.max(
-        0,
-        Math.min(canvas.height - chicken.size, chicken.y)
-    );
-
-    if(chicken.y <= 0){
-        winPoint();
+        if(score>=5) unlockedUFO=true;
     }
 }
 
-document.addEventListener("keydown",(e)=>{
-
-    if(e.key==="z" || e.key==="ArrowUp"){
-        move("up");
-    }
-
-    if(e.key==="s" || e.key==="ArrowDown"){
-        move("down");
-    }
-
-    if(e.key==="q" || e.key==="ArrowLeft"){
-        move("left");
-    }
-
-    if(e.key==="d" || e.key==="ArrowRight"){
-        move("right");
-    }
+document.addEventListener("keydown",e=>{
+    if(e.key==="z")move("up");
+    if(e.key==="s")move("down");
+    if(e.key==="q")move("left");
+    if(e.key==="d")move("right");
 });
 
-function collision(a,b){
-    return (
-        a.x < b.x + b.width &&
-        a.x + a.size > b.x &&
-        a.y < b.y + b.height &&
-        a.y + a.size > b.y
-    );
-}
-
-function gameOver(){
-
-    alert("💥 Game Over ! Score : " + score);
-
-    score = 0;
-
-    scoreText.textContent = "Score : 0";
-
-    chicken.x = 240;
-    chicken.y = 550;
-}
-
 function update(){
+    cars.forEach(c=>{
+        c.x+=c.speed;
+        if(c.x>500) c.x=-100;
+        if(c.x<-100) c.x=500;
+        if(hit(c)) reset();
+    });
 
-    cars.forEach(car=>{
+    logs.forEach(l=>{
+        l.x+=l.speed;
+        if(l.x>500) l.x=-120;
+    });
 
-        car.x += car.speed;
-
-        if(car.speed > 0 && car.x > canvas.width + 100){
-            car.x = -100;
-        }
-
-        if(car.speed < 0 && car.x < -100){
-            car.x = canvas.width + 100;
-        }
-
-        if(collision(chicken,car)){
-            gameOver();
+    coins.forEach(c=>{
+        if(Math.abs(chicken.x-c.x)<20 && Math.abs(chicken.y-c.y)<20){
+            score+=1;
+            c.x=-999;
         }
     });
+}
+
+function hit(obj){
+    return chicken.x<obj.x+obj.w &&
+           chicken.x+20>obj.x &&
+           chicken.y<obj.y+obj.h &&
+           chicken.y+20>obj.y;
+}
+
+function reset(){
+    alert("💥 Game Over");
+    score=0;
+    chicken.x=240;
+    chicken.y=550;
 }
 
 function draw(){
+    ctx.clearRect(0,0,500,600);
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    for(let y=60;y<canvas.height;y+=60){
-
-        ctx.fillStyle = "#666";
-        ctx.fillRect(0,y,canvas.width,40);
+    ctx.fillStyle="#555";
+    for(let y=80;y<600;y+=80){
+        ctx.fillRect(0,y,500,40);
     }
 
-    cars.forEach(car=>{
-
-        ctx.fillStyle = car.color;
-        ctx.fillRect(
-            car.x,
-            car.y,
-            car.width,
-            car.height
-        );
+    cars.forEach(c=>{
+        ctx.fillStyle="red";
+        ctx.fillRect(c.x,c.y,c.w,c.h);
     });
 
-    ctx.font = "25px Arial";
-    ctx.fillText(
-        "🐔",
-        chicken.x,
-        chicken.y + 20
-    );
+    logs.forEach(l=>{
+        ctx.fillStyle="brown";
+        ctx.fillRect(l.x,l.y,l.w,l.h);
+    });
+
+    coins.forEach(c=>{
+        ctx.fillStyle="gold";
+        ctx.beginPath();
+        ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+        ctx.fill();
+    });
+
+    ctx.font="30px Arial";
+    ctx.fillText(skin,chicken.x,chicken.y);
 }
 
 function loop(){
-
-    update();
-    draw();
-
+    if(state==="game"){
+        update();
+        draw();
+    }
     requestAnimationFrame(loop);
 }
 
 loop();
-
 </script>
 
 </body>
