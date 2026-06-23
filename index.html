@@ -9,26 +9,35 @@
 body{
     margin:0;
     font-family:Arial;
-    background:#111;
+    background:linear-gradient(#111,#000);
     color:white;
     text-align:center;
     user-select:none;
+}
+
+h1{
+    margin:10px;
 }
 
 button{
     padding:10px 15px;
     margin:5px;
     border:none;
-    border-radius:10px;
+    border-radius:12px;
     font-size:18px;
     cursor:pointer;
 }
 
+button:hover{
+    transform:scale(1.05);
+}
+
 canvas{
-    background:#333;
+    background:linear-gradient(#444,#222);
     display:block;
     margin:auto;
     border:3px solid white;
+    border-radius:10px;
 }
 
 #mobileControls button{
@@ -42,7 +51,7 @@ canvas{
     position:absolute;
     top:10px;
     left:10px;
-    font-size:24px;
+    font-size:28px;
     cursor:pointer;
     display:none;
 }
@@ -85,10 +94,10 @@ const skinsMenu = document.getElementById("skinsMenu");
 const mobileControls = document.getElementById("mobileControls");
 const backBtn = document.getElementById("back");
 
-let state="menu";
+let state = "menu";
 
-let skin="🐔";
-let score=0;
+let skin = "🐔";
+let score = 0;
 
 let best = localStorage.getItem("best") || 0;
 document.getElementById("best").textContent = best;
@@ -104,8 +113,8 @@ const cars = [];
 const coins = [];
 
 function setup(){
-    cars.length=0;
-    coins.length=0;
+    cars.length = 0;
+    coins.length = 0;
 
     for(let i=0;i<6;i++){
         cars.push({
@@ -117,77 +126,88 @@ function setup(){
         });
     }
 
-    for(let i=0;i<5;i++){
+    for(let i=0;i<6;i++){
         coins.push({
             x:Math.random()*500,
             y:Math.random()*600,
-            r:8
+            r:10,
+            taken:false
         });
     }
 }
 
 function startGame(){
-    state="game";
-    menu.style.display="none";
-    skinsMenu.style.display="none";
-    canvas.style.display="block";
-    mobileControls.style.display="block";
-    backBtn.style.display="block";
+    state = "game";
+    menu.style.display = "none";
+    skinsMenu.style.display = "none";
+    canvas.style.display = "block";
+    mobileControls.style.display = "block";
+    backBtn.style.display = "block";
     setup();
 }
 
 function openSkins(){
-    state="skins";
-    menu.style.display="none";
-    skinsMenu.style.display="block";
+    state = "skins";
+    menu.style.display = "none";
+    skinsMenu.style.display = "block";
 
-    const box=document.getElementById("skinList");
-    box.innerHTML="";
+    const box = document.getElementById("skinList");
+    box.innerHTML = "";
+
+    let back = document.createElement("div");
+    back.textContent = "⬅️ Retour";
+    back.style.cursor = "pointer";
+    back.style.fontSize = "20px";
+    back.style.marginBottom = "10px";
+    back.onclick = goMenu;
+    box.appendChild(back);
 
     skinListArray.forEach(s=>{
-        let b=document.createElement("button");
-        b.textContent=s;
-        b.onclick=()=>skin=s;
+        let b = document.createElement("button");
+        b.textContent = s;
+        b.onclick = () => skin = s;
         box.appendChild(b);
     });
 
-    let secretBtn=document.createElement("button");
+    let secretBtn = document.createElement("button");
     secretBtn.textContent = ufoUnlocked ? secretSkin : "🔒";
-    secretBtn.onclick=()=>{ if(ufoUnlocked) skin = secretSkin; };
+    secretBtn.onclick = () => {
+        if(ufoUnlocked) skin = secretSkin;
+    };
     box.appendChild(secretBtn);
 }
 
 function goMenu(){
-    state="menu";
-    menu.style.display="block";
-    skinsMenu.style.display="none";
-    canvas.style.display="none";
-    mobileControls.style.display="none";
-    backBtn.style.display="none";
+    state = "menu";
+    menu.style.display = "block";
+    skinsMenu.style.display = "none";
+    canvas.style.display = "none";
+    mobileControls.style.display = "none";
+    backBtn.style.display = "none";
 }
 
 function move(dir){
-    let step=30;
+    let step = 30;
 
-    if(dir==="up") chicken.y-=step;
-    if(dir==="down") chicken.y+=step;
-    if(dir==="left") chicken.x-=step;
-    if(dir==="right") chicken.x+=step;
+    if(dir==="up") chicken.y -= step;
+    if(dir==="down") chicken.y += step;
+    if(dir==="left") chicken.x -= step;
+    if(dir==="right") chicken.x += step;
 
-    chicken.x=Math.max(0,Math.min(500,chicken.x));
-    chicken.y=Math.max(0,Math.min(600,chicken.y));
+    chicken.x = Math.max(0,Math.min(500,chicken.x));
+    chicken.y = Math.max(0,Math.min(600,chicken.y));
 
-    if(chicken.y<=0){
+    if(chicken.y <= 0){
         score++;
-        chicken.x=240;
-        chicken.y=550;
+        chicken.x = 240;
+        chicken.y = 550;
 
-        if(score>=5) ufoUnlocked=true;
+        if(score >= 5) ufoUnlocked = true;
 
-        if(score>best){
-            best=score;
+        if(score > best){
+            best = score;
             localStorage.setItem("best",best);
-            document.getElementById("best").textContent=best;
+            document.getElementById("best").textContent = best;
         }
     }
 }
@@ -200,58 +220,74 @@ document.addEventListener("keydown",e=>{
 });
 
 function update(){
+
     cars.forEach(c=>{
-        c.x+=c.speed;
+        c.x += c.speed;
 
-        if(c.x>500) c.x=-100;
-        if(c.x<-100) c.x=500;
+        if(c.x > 500) c.x = -100;
+        if(c.x < -100) c.x = 500;
 
-        if(hit(c)) reset();
+        if(hit(c) && skin !== secretSkin){
+            reset();
+        }
     });
 
     coins.forEach(c=>{
-        if(Math.abs(chicken.x-c.x)<20 && Math.abs(chicken.y-c.y)<20){
+        if(!c.taken &&
+        Math.abs(chicken.x - c.x) < 20 &&
+        Math.abs(chicken.y - c.y) < 20){
+
             score++;
-            c.x=-999;
+            c.taken = true;
+
+            if(score > best){
+                best = score;
+                localStorage.setItem("best",best);
+                document.getElementById("best").textContent = best;
+            }
+
+            if(score >= 5) ufoUnlocked = true;
         }
     });
 }
 
 function hit(c){
-    return chicken.x<c.x+c.w &&
-           chicken.x+20>c.x &&
-           chicken.y<c.y+c.h &&
-           chicken.y+20>c.y;
+    return chicken.x < c.x + c.w &&
+           chicken.x + 20 > c.x &&
+           chicken.y < c.y + c.h &&
+           chicken.y + 20 > c.y;
 }
 
 function reset(){
     alert("💥 Game Over");
-    score=0;
-    chicken.x=240;
-    chicken.y=550;
+    score = 0;
+    chicken.x = 240;
+    chicken.y = 550;
 }
 
 function draw(){
     ctx.clearRect(0,0,500,600);
 
     cars.forEach(c=>{
-        ctx.fillStyle="red";
+        ctx.fillStyle = "#ff3b3b";
         ctx.fillRect(c.x,c.y,c.w,c.h);
     });
 
     coins.forEach(c=>{
-        ctx.fillStyle="gold";
-        ctx.beginPath();
-        ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
-        ctx.fill();
+        if(!c.taken){
+            ctx.fillStyle = "gold";
+            ctx.beginPath();
+            ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+            ctx.fill();
+        }
     });
 
-    ctx.font="30px Arial";
+    ctx.font = "30px Arial";
     ctx.fillText(skin,chicken.x,chicken.y);
 }
 
 function loop(){
-    if(state==="game"){
+    if(state === "game"){
         update();
         draw();
     }
@@ -263,4 +299,4 @@ loop();
 </script>
 
 </body>
-</html>
+        </html>
