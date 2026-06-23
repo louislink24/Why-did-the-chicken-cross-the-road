@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chicken Crossroad</title>
+<title>🐔 Chicken Crossroad</title>
 
 <style>
 body{
@@ -12,6 +12,7 @@ body{
     color:white;
     font-family:Arial,sans-serif;
     text-align:center;
+    user-select:none;
 }
 
 h1{
@@ -26,6 +27,21 @@ h1{
 canvas{
     background:#444;
     border:3px solid white;
+    max-width:95%;
+}
+
+#mobileControls{
+    margin-top:15px;
+}
+
+#mobileControls button{
+    width:70px;
+    height:70px;
+    font-size:30px;
+    margin:4px;
+    border:none;
+    border-radius:15px;
+    cursor:pointer;
 }
 </style>
 </head>
@@ -36,18 +52,26 @@ canvas{
 
 <canvas id="game" width="500" height="600"></canvas>
 
+<div id="mobileControls">
+    <button onclick="move('up')">⬆️</button>
+    <br>
+    <button onclick="move('left')">⬅️</button>
+    <button onclick="move('down')">⬇️</button>
+    <button onclick="move('right')">➡️</button>
+</div>
+
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-
 const scoreText = document.getElementById("score");
 
 let score = 0;
 
 const chicken = {
-    x: 240,
-    y: 550,
-    size: 20
+    x:240,
+    y:550,
+    size:20
 };
 
 const cars = [];
@@ -55,57 +79,93 @@ const cars = [];
 function createCar(y,speed,color){
     cars.push({
         x: speed > 0 ? -100 : canvas.width + 100,
-        y,
-        width: 80,
-        height: 35,
-        speed,
-        color
+        y:y,
+        width:80,
+        height:35,
+        speed:speed,
+        color:color
     });
 }
 
 for(let i=0;i<8;i++){
-    createCar(80 + i*60,
-    Math.random()>0.5 ? 3+Math.random()*3 : -(3+Math.random()*3),
-    `hsl(${Math.random()*360},80%,60%)`);
+    createCar(
+        80 + i*60,
+        Math.random() > 0.5
+        ? 3 + Math.random()*3
+        : -(3 + Math.random()*3),
+        `hsl(${Math.random()*360},80%,60%)`
+    );
+}
+
+function winPoint(){
+
+    score++;
+
+    scoreText.textContent = "Score : " + score;
+
+    chicken.x = 240;
+    chicken.y = 550;
+
+    cars.forEach(car=>{
+        if(car.speed > 0){
+            car.speed += 0.3;
+        }else{
+            car.speed -= 0.3;
+        }
+    });
+}
+
+function move(direction){
+
+    const step = 30;
+
+    if(direction === "up"){
+        chicken.y -= step;
+    }
+
+    if(direction === "down"){
+        chicken.y += step;
+    }
+
+    if(direction === "left"){
+        chicken.x -= step;
+    }
+
+    if(direction === "right"){
+        chicken.x += step;
+    }
+
+    chicken.x = Math.max(
+        0,
+        Math.min(canvas.width - chicken.size, chicken.x)
+    );
+
+    chicken.y = Math.max(
+        0,
+        Math.min(canvas.height - chicken.size, chicken.y)
+    );
+
+    if(chicken.y <= 0){
+        winPoint();
+    }
 }
 
 document.addEventListener("keydown",(e)=>{
 
-    const step = 30;
-
     if(e.key==="z" || e.key==="ArrowUp"){
-        chicken.y -= step;
+        move("up");
     }
 
     if(e.key==="s" || e.key==="ArrowDown"){
-        chicken.y += step;
+        move("down");
     }
 
     if(e.key==="q" || e.key==="ArrowLeft"){
-        chicken.x -= step;
+        move("left");
     }
 
     if(e.key==="d" || e.key==="ArrowRight"){
-        chicken.x += step;
-    }
-
-    chicken.x = Math.max(0,Math.min(canvas.width-chicken.size,chicken.x));
-    chicken.y = Math.max(0,Math.min(canvas.height-chicken.size,chicken.y));
-
-    if(chicken.y <= 0){
-        score++;
-        scoreText.textContent = "Score : " + score;
-
-        chicken.x = 240;
-        chicken.y = 550;
-
-        cars.forEach(car=>{
-            if(car.speed>0){
-                car.speed += 0.3;
-            }else{
-                car.speed -= 0.3;
-            }
-        });
+        move("right");
     }
 });
 
@@ -119,9 +179,11 @@ function collision(a,b){
 }
 
 function gameOver(){
+
     alert("💥 Game Over ! Score : " + score);
 
     score = 0;
+
     scoreText.textContent = "Score : 0";
 
     chicken.x = 240;
@@ -153,88 +215,41 @@ function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     for(let y=60;y<canvas.height;y+=60){
-        ctx.fillStyle="#666";
+
+        ctx.fillStyle = "#666";
         ctx.fillRect(0,y,canvas.width,40);
     }
 
     cars.forEach(car=>{
+
         ctx.fillStyle = car.color;
-        ctx.fillRect(car.x,car.y,car.width,car.height);
+        ctx.fillRect(
+            car.x,
+            car.y,
+            car.width,
+            car.height
+        );
     });
 
-    ctx.font="25px Arial";
-    ctx.fillText("🐔",chicken.x,chicken.y+20);
+    ctx.font = "25px Arial";
+    ctx.fillText(
+        "🐔",
+        chicken.x,
+        chicken.y + 20
+    );
 }
 
 function loop(){
+
     update();
     draw();
+
     requestAnimationFrame(loop);
 }
 
-function move(direction){
+loop();
 
-    const step = 30;
-
-    if(direction === "up"){
-        chicken.y -= step;
-    }
-
-    if(direction === "down"){
-        chicken.y += step;
-    }
-
-    if(direction === "left"){
-        chicken.x -= step;
-    }
-
-    if(direction === "right"){
-        chicken.x += step;
-    }
-
-    chicken.x = Math.max(0,Math.min(canvas.width-chicken.size,chicken.x));
-    chicken.y = Math.max(0,Math.min(canvas.height-chicken.size,chicken.y));
-
-    if(chicken.y <= 0){
-        score++;
-        scoreText.textContent = "Score : " + score;
-
-        chicken.x = 240;
-        chicken.y = 550;
-
-        cars.forEach(car=>{
-            if(car.speed > 0){
-                car.speed += 0.3;
-            }else{
-                car.speed -= 0.3;
-            }
-        });
-    }
-        }
-    loop();
 </script>
 
-    <div id="mobileControls">
-    <button onclick="move('up')">⬆️</button><br>
-    <button onclick="move('left')">⬅️</button>
-    <button onclick="move('down')">⬇️</button>
-    <button onclick="move('right')">➡️</button>
-</div>
-
-<style>
-#mobileControls{
-    margin-top:15px;
-}
-
-#mobileControls button{
-    width:70px;
-    height:70px;
-    font-size:30px;
-    margin:4px;
-    border:none;
-    border-radius:15px;
-    cursor:pointer;
-}
-</style>
 </body>
-  </html>
+</html>
